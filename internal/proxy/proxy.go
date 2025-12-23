@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/Prodro21/video-edge/internal/cache"
+	"github.com/Prodro21/video-edge/internal/metrics"
 )
 
 // Proxy forwards requests to the upstream video-platform server
@@ -102,12 +103,15 @@ func (p *Proxy) handleCacheableRequest(w http.ResponseWriter, r *http.Request) {
 	reader, item, err := p.cache.GetReader(cacheKey)
 	if err == nil {
 		defer reader.Close()
+		metrics.IncCacheHit()
 		w.Header().Set("Content-Type", item.ContentType)
 		w.Header().Set("X-Cache", "HIT")
 		w.Header().Set("X-Cache-Created", item.CreatedAt.Format(time.RFC3339))
 		io.Copy(w, reader)
 		return
 	}
+
+	metrics.IncCacheMiss()
 
 	// Try upstream
 	if p.IsOnline() {

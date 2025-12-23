@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/Prodro21/video-edge/internal/cache"
+	"github.com/Prodro21/video-edge/internal/metrics"
 	"github.com/Prodro21/video-edge/internal/proxy"
 	"github.com/Prodro21/video-edge/internal/sync"
 	"github.com/Prodro21/video-edge/internal/websocket"
@@ -121,6 +122,12 @@ func main() {
 
 func setupRouter(cfg Config, apiProxy *proxy.Proxy, syncer *sync.Syncer, wsHub *websocket.Hub, fileCache *cache.Cache) *gin.Engine {
 	router := gin.Default()
+
+	// Prometheus metrics middleware
+	router.Use(metrics.GinMiddleware())
+
+	// Prometheus metrics endpoint
+	router.GET("/metrics", metrics.Handler())
 
 	// Health check
 	router.GET("/health", func(c *gin.Context) {
@@ -274,6 +281,9 @@ func connectionChecker(cfg Config, apiProxy *proxy.Proxy, wsHub *websocket.Hub) 
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		isOnline := apiProxy.CheckConnection(ctx)
 		cancel()
+
+		// Update metrics
+		metrics.SetUpstreamOnline(isOnline)
 
 		// State changed
 		if isOnline != wasOnline {
