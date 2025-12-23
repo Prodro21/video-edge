@@ -1,0 +1,15 @@
+# Binaries
+video-edge
+*.exe
+
+# Cache and data directories (root level only)
+/cache/
+/data/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# OS
+.DS_Store
